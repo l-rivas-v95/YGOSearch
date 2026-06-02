@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Yu-Gi-Oh! Deck Viewer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- Favicon package -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}?v=3">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}?v=3">
+    <meta name="theme-color" content="#ffffff">
+</head>
+<body>
+
+<div class="layout">
+    <aside class="sidebar">
+        <a href="/" class="logo">
+            <img src="{{ url_for('static', filename='img/yu-gi-oh.png') }}" alt="Yu-Gi-Oh Logo">
+        </a>
+        <h3 class="sidebar-title">Categorías / Decks</h3>
+        <nav class="deck-list">
+            <a href="/?limit={{ limit }}" class="deck-link {% if not selected_deck %}active{% endif %}">
+                Ver Todas las Cartas
+            </a>
+            <div class="sidebar-divider"></div>
+            {% for d in decks %}
+            <a href="/?deck={{ d.name|urlencode }}&limit={{ limit }}"
+               class="deck-link {% if selected_deck == d.name %}active{% endif %}">
+                {{ d.name }}
+            </a>
+            {% endfor %}
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <h2>{{ selected_deck if selected_deck else "Yu-Gi-Oh!" }}</h2>
+
+            <form class="search-form" method="get" action="/">
+                {% if selected_deck %}<input type="hidden" name="deck" value="{{ selected_deck }}">{% endif %}
+                <input type="hidden" name="limit" value="{{ limit }}">
+
+                <div class="search-row">
+                    <input type="text" name="q" placeholder="Nombre, tipo o ID..." value="{{ q }}">
+                    <button type="submit" class="btn-primary">Buscar</button>
+                    {% if q or selected_deck or monsters or spells or traps %}
+                    <a class="clear-btn" href="/?limit={{ limit }}">Limpiar filtros</a>
+                    {% endif %}
+                </div>
+
+                <div class="filter-row">
+                    <label>
+                        <input type="checkbox" name="monsters" {% if monsters %}checked{% endif %}> Monstruos
+                    </label>
+                    <label>
+                        <input type="checkbox" name="spells" {% if spells %}checked{% endif %}> Mágicas
+                    </label>
+                    <label>
+                        <input type="checkbox" name="traps" {% if traps %}checked{% endif %}> Trampas
+                    </label>
+                </div>
+            </form>
+
+            <div class="limit-selector">
+                <span>Mostrar:</span>
+                {% for l in [20, 50, 100] %}
+                <a href="/?limit={{ l }}{% if q %}&q={{ q }}{% endif %}{% if selected_deck %}&deck={{ selected_deck|urlencode }}{% endif %}{% if monsters %}&monsters=on{% endif %}{% if spells %}&spells=on{% endif %}{% if traps %}&traps=on{% endif %}"
+                >
+                    {{ l }}
+                </a>
+                {% endfor %}
+            </div>
+
+            <p class="results-count">Resultados encontrados: {{ cards|length }}</p>
+        </header>
+
+        <div class="cards-grid">
+            {% for c in cards %}
+            <div class="card-item"
+                 onclick="openModal('{{ c.name|e }}', '{{ c.image_url }}', '{{ c.type|e }}', '{{ c.race|e }}', '{{ c.desc|e }}', '{{ c.atk }}', '{{ c.def }}', '{{ c.level }}', '{{ c.id }}')">
+                <img src="{{ c.image_url }}" alt="{{ c.name }}"
+                     onerror="this.src='https://images.ygoprodeck.com/images/cards/back_high.jpg';" loading="lazy">
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+
+<div id="cardModal" class="modal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <img id="modalImg" src="" alt="Carta">
+        <div class="modal-body">
+            <h2 id="modalName"></h2>
+            <div id="modalBadges"></div>
+            <div id="modalStats" class="modal-stats"></div>
+            <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
+            <p id="modalDesc"></p>
+            <div id="modalId" style="font-size:12px; color:#666; margin-top:20px"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openModal(name, img, type, race, desc, atk, def, lvl, id) {
+        document.getElementById('modalName').innerText = name;
+        document.getElementById('modalDesc').innerText = desc;
+        document.getElementById('modalId').innerText = "Card ID: " + id;
+
+        const mImg = document.getElementById('modalImg');
+        mImg.src = (img && img !== 'None') ? img : 'https://images.ygoprodeck.com/images/cards/back_high.jpg';
+        mImg.onerror = function () {
+            this.src = 'https://images.ygoprodeck.com/images/cards/back_high.jpg';
+        };
+
+        let badges = `<span class="badge">${type}</span>`;
+        if (race && race !== 'None') badges += `<span class="badge">${race}</span>`;
+        document.getElementById('modalBadges').innerHTML = badges;
+
+        let stats = "";
+        if (lvl && lvl !== 'None' && lvl !== 'undefined') stats += `★ ${lvl} `;
+        if (atk !== 'None' && atk !== 'undefined' && atk !== '') stats += ` | ATK: ${atk}`;
+        if (def !== 'None' && def !== 'undefined' && def !== '') stats += ` | DEF: ${def}`;
+        document.getElementById('modalStats').innerText = stats;
+
+        document.getElementById('cardModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('cardModal').style.display = 'none';
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === "Escape") closeModal();
+    });
+</script>
+</body>
+</html>

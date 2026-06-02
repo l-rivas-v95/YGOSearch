@@ -1,0 +1,5 @@
+MONGO_URI = "mongodb://localhost:27017"
+DB_NAME = "Yu-Gi-Oh"
+CARDS_COLLECTION_NAME = "Cards"
+DECKS_COLLECTION_NAME = "Decks"
+DEFAULT_LIMIT = 20
